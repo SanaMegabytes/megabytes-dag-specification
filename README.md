@@ -63,4 +63,10 @@ style H21 fill:transparent,stroke-width:0px,stroke:transparent;
 ```
 ---
 
+**Full technical specification:**  
+See the complete DAG glossary, definitions, and GhostDAG rules in  
+[DAG_SPEC.md](./DAG_SPEC.md)
+
+
+
 
