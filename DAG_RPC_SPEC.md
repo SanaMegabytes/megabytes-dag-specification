@@ -129,8 +129,9 @@ This command is invaluable for measuring:
 
 ### Example
 
-bash  
-megabytes-cli getdagstats  
+```bash  
+megabytes-cli getdagstats
+```
 
 ### Returned fields (summary)
 
