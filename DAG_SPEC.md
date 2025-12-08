@@ -618,6 +618,32 @@ part of the canonical DAG structure.
 
 ---
 
+## 9. RPC Interpretation
+
+This specification describes the structural and algorithmic behavior of the Megabytes BlockDAG.
+
+For detailed RPC commands, examples, and expected outputs, please refer to:
+
+**[DAG_RPC_SPEC.md](./DAG_RPC_SPEC.md)**
+
+This companion document provides complete descriptions for:
+
+- `getblockdag`
+- `getdaglayer`
+- `getdagstats`
+
+including:
+
+- parameter definitions  
+- response fields  
+- real examples from regtest  
+- how to interpret DAG parents, children, mergeset width, blue score, MHIS, and more.
+
+The DAG_SPEC explains *how the DAG works*.  
+The DAG_RPC_SPEC explains *how to query and inspect it*.
+
+---
+
 ## DAG Glossary (Key Terms)
 
 ### Blue Block
