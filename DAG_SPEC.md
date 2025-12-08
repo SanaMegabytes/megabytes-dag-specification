@@ -1,10 +1,10 @@
+### Why Megabytes uses a BlockDAG
+
 A **BlockDAG** (Directed Acyclic Graph of Blocks) is a generalization of the traditional blockchain structure.  
 Instead of forcing every block to extend a single linear chain, a BlockDAG allows **multiple valid blocks to exist at the same height**, forming a graph of partially ordered blocks.
 
 This reflects real-world mining conditions: multiple miners may find a block at nearly the same time, and network propagation delays mean valid work should not be discarded.  
 A DAG preserves this work instead of orphaning it.
-
-### Why Megabytes uses a BlockDAG
 
 Megabytes adopts a BlockDAG for several structural and security advantages:
 
@@ -35,6 +35,61 @@ The Megabytes BlockDAG is engineered around three core goals:
   Honest miners contributing valid blocks nearly simultaneously are preserved inside the DAG, improving fairness and liveness.
 
 ---
+
+## DAG Glossary (Key Terms)
+
+### Blue Block
+A block selected by GhostDAG as part of the honest, well-connected chain.  
+Blue blocks have small anticone sets and strong DAG connectivity.
+
+### Red Block
+A valid block that is not chosen for the blue set.  
+Red blocks typically have weaker connectivity, a larger anticone, or arrive too late.  
+They remain part of the DAG but do not represent the canonical structure.
+
+### Width
+The number of blocks produced at the same height.
+
+- `width = 1` → fully converged  
+- `width = 2` or `3` → normal short-term concurrency  
+- `width >= 4` → possible attack or poor network connectivity  
+
+Width is useful to detect abnormal or suspicious behavior.
+
+### Parent
+A block listed inside `dag_parents`.  
+A block may have multiple parents:
+- one **blue parent** (best, well-connected parent)  
+- additional **DAG parents** to maintain global connectivity  
+
+This multi-parent model reduces orphaning and improves DAG robustness.
+
+### Children
+Blocks that reference the current block as one of their parents.  
+Children are useful to visualize forward connectivity and detect divergence near the tip.
+
+### Anticone
+The set of blocks that are neither ancestors nor descendants of a given block.  
+A large anticone usually indicates a block that is less well integrated into the DAG and is often classified as red.
+
+### Mergeset
+All blocks that must be considered when integrating a new block into the DAG.  
+GhostDAG uses mergeset properties to decide block color (blue or red) and to evaluate chain quality.
+
+### Tip
+A block with no children.  
+Multiple tips indicate parallel mining or temporary forks (width > 1 near the head).
+
+### Isolated DAG (Megabytes-specific)
+A branch with extremely weak connectivity to the honest DAG.  
+Such branches exhibit very low DAC quality and are subject to Finality V2 isolation veto.
+
+### Algorithm Divergence (R_algo)
+Measures how a branch’s PoW algorithm distribution deviates from the honest chain.  
+Strong mono-algo bias or unrealistic proportions are treated as suspicious behavior in the security model.
+
+---
+
 
 ## High-Level Overview
 
@@ -824,57 +879,72 @@ DAG anomalies are the first line of defense against non-honest chain behavior.
 
 ---
 
-## DAG Glossary (Key Terms)
+## 11. Conclusion
 
-### Blue Block
-A block selected by GhostDAG as part of the honest, well-connected chain.  
-Blue blocks have small anticone sets and strong DAG connectivity.
+The Megabytes BlockDAG is designed as a modern, security-oriented evolution of
+traditional blockchain consensus.  
+Rather than forcing a single linear chain, the DAG structure captures the full
+parallelism of decentralized mining while preserving deterministic convergence.
 
-### Red Block
-A valid block that is not chosen for the blue set.  
-Red blocks typically have weaker connectivity, a larger anticone, or arrive too late.  
-They remain part of the DAG but do not represent the canonical structure.
+Key properties of the Megabytes DAG:
 
-### Width
-The number of blocks produced at the same height.
+- **Preserves all honest blocks**, even during concurrency.
+- **Provides structural insight** into mining behavior through mergesets,
+  anticonse, and width.
+- **Detects anomalies early**, including isolation, timestamp drift,
+  mergeset divergence, and algorithm bias.
+- **Integrates seamlessly with FinalityV2**, enabling strong vetoes against
+  malicious reorg attempts.
+- **Ensures predictable convergence** via GhostDAG blue/red coloring and
+  multi-parent connectivity.
+- **Feeds high-quality structural data** into the scoring engine that
+  underpins Megabytes’ reorg resistance.
 
-- `width = 1` → fully converged  
-- `width = 2` or `3` → normal short-term concurrency  
-- `width >= 4` → possible attack or poor network connectivity  
+Together, these features give Megabytes a uniquely strong foundation for
+decentralized security—combining the flexibility of a DAG with the stability and
+predictability of traditional PoW finality layers.
 
-Width is useful to detect abnormal or suspicious behavior.
-
-### Parent
-A block listed inside `dag_parents`.  
-A block may have multiple parents:
-- one **blue parent** (best, well-connected parent)  
-- additional **DAG parents** to maintain global connectivity  
-
-This multi-parent model reduces orphaning and improves DAG robustness.
-
-### Children
-Blocks that reference the current block as one of their parents.  
-Children are useful to visualize forward connectivity and detect divergence near the tip.
-
-### Anticone
-The set of blocks that are neither ancestors nor descendants of a given block.  
-A large anticone usually indicates a block that is less well integrated into the DAG and is often classified as red.
-
-### Mergeset
-All blocks that must be considered when integrating a new block into the DAG.  
-GhostDAG uses mergeset properties to decide block color (blue or red) and to evaluate chain quality.
-
-### Tip
-A block with no children.  
-Multiple tips indicate parallel mining or temporary forks (width > 1 near the head).
-
-### Isolated DAG (Megabytes-specific)
-A branch with extremely weak connectivity to the honest DAG.  
-Such branches exhibit very low DAC quality and are subject to Finality V2 isolation veto.
-
-### Algorithm Divergence (R_algo)
-Measures how a branch’s PoW algorithm distribution deviates from the honest chain.  
-Strong mono-algo bias or unrealistic proportions are treated as suspicious behavior in the security model.
+The DAG is not only a data structure:  
+it is a lens through which the network’s honesty, connectivity, and behavior
+can be analyzed in real time.
 
 ---
 
+## 12. Future Work
+
+While the current DAG implementation is robust and production-ready, several
+avenues exist for future refinement and research:
+
+### 12.1 Adaptive MHIS Windows
+Dynamically adjusting the MHIS history window based on recent network behavior
+could tighten long-range protection under abnormal conditions.
+
+### 12.2 Enhanced Isolation Metrics
+More advanced connectivity metrics (e.g., weighted DAG reachability, cluster analysis)
+could improve early detection of private mining attempts.
+
+### 12.3 Algorithm Distribution Modeling
+Statistical or machine-learning models could predict expected PoW algorithm mixes,
+making R_algo more adaptive when mining dynamics shift over time.
+
+### 12.4 Fine-Grained Mergeset Analytics
+Measuring variance across mergesets over moving windows could improve anomaly
+detection and reduce false positives.
+
+### 12.5 Visualization Tools
+Graph visualizers (e.g., DAG explorers, mergeset viewers) would help researchers
+and node operators better understand DAG behavior in real time.
+
+### 12.6 Optional Network-Layer Protections
+Although outside the scope of current consensus rules, future versions may
+explore decentralized mechanisms to resist eclipse attacks and targeted partitioning.
+
+---
+
+Megabytes’ philosophy is **progressive, transparent hardening**:  
+Each improvement is measurable, incremental, and grounded in real-world
+attack models and behavior observed on the DAG itself.
+
+The DAG is the backbone of Megabytes’ structural security,  
+and future refinements will continue to strengthen its role in ensuring  
+**a stable, manipulation-resistant Proof-of-Work network.**
