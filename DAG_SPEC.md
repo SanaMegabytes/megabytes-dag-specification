@@ -644,6 +644,186 @@ The DAG_RPC_SPEC explains *how to query and inspect it*.
 
 ---
 
+## 10. DAG Anomaly Detection
+
+While the BlockDAG naturally accommodates honest concurrency (width 2–3, temporary forks),
+certain structural patterns indicate abnormal or malicious behavior.  
+Megabytes detects these anomalies early, using local DAG metrics even before
+FinalityV2 scoring is applied.
+
+Anomalies do not imply invalid blocks, but they influence:
+
+- blue/red classification,
+- mergeset consistency,
+- R_dac (DAG connectivity),
+- R_algo (PoW algorithm distribution),
+- and eligibility for reorganization.
+
+DAG anomaly detection provides the first structural filter for attack resistance.
+
+### 10.1 DAG Isolation (Low Connectivity)
+
+A block or branch is considered **isolated** when:
+
+- it references very few recent blocks,
+- its parent set lacks diversity,
+- its mergeset is small or inconsistent,
+- it does not attach meaningfully to the honest DAG.
+
+Isolated branches typically arise from:
+
+- private mining,
+- aggressive withholding,
+- eclipse-style mining,
+- deliberate attempts to create invisible forks.
+
+Effects:
+
+- R_dac becomes negative (poor DAG connectivity),
+- mergesets shrink unnaturally,
+- GhostDAG flags blocks as structurally weak,
+- FinalityV2 can immediately reject reorgs ≥ 3 blocks with  
+  `bad-reorg-isolated-dag`.
+
+Isolation is one of the strongest signals of malicious intent.
+
+### 10.2 Abnormal Width (Excessive Parallel Blocks)
+
+Honest concurrency usually creates:
+
+- width = 1 → normal convergence
+- width = 2 or 3 → standard PoW race
+
+But persistent or repeated large widths can indicate:
+
+- miner attempting high-volume parallel block generation,
+- timestamp manipulation,
+- lack of propagation (possible partition),
+- intentional flooding of the DAG.
+
+Symptoms:
+
+- large mergesets,
+- large anticonse,
+- difficulty determining a blue block,
+- blue score divergence.
+
+GhostDAG handles short-term width spikes normally,
+but long-term wide layers downgrade structural trust and reduce eligibility
+for canonical chain advancement.
+
+### 10.3 Mergeset Divergence
+
+Mergesets should remain similar among honest blocks produced at the same height.
+
+Signs of mergeset divergence:
+
+- children select very different parent sets,
+- mergeset size varies too much among parallel blocks,
+- mergesets contain inconsistent ancestor relationships,
+- mergesets conflict with the main parent’s mergeset.
+
+Causes:
+
+- manipulated parallel forks,
+- timestamp drifting attacks,
+- heavy withholding,
+- selective revelation.
+
+Effects:
+
+- increased anticone size → red classification,
+- reduced blue score for the attacker’s blocks,
+- R_blue and R_dac penalties,
+- reduced reorg eligibility under FinalityV2 scoring.
+
+### 10.4 Timestamp Drift and Compressed History
+
+Attackers often attempt to mine quickly in private by squeezing timestamps.
+
+Anomalies include:
+
+- multiple blocks with nearly identical timestamps,
+- inter-block spacing inconsistent with 60-second target,
+- compressed ancestor structure (small mergesets),
+- MHIS warnings (history window too compressed).
+
+Detection Path:
+
+1. MHIS flags compressed timelines.  
+2. Mergesets become shallow → low structural trust.  
+3. FinalityV2 scoring penalizes unrealistic progression.
+
+A reorg with compressed timestamps is typically rejected at MHIS or isolation stage.
+
+### 10.5 Algorithm Distribution Anomalies (R_algo)
+
+Megabytes uses multiple PoW algorithms.  
+Honest mining produces a **stochastic mix** of these algorithms.
+
+Algorithm anomalies include:
+
+- 100% mono-algo forks,
+- statistically biased distributions (e.g., 90% one algo),
+- sudden shifts in dominant algo usage,
+- forks with unrealistic PoW sequences compared to the honest chain.
+
+Effects:
+
+- R_algo becomes strongly negative,
+- Score < MinScore → reorg veto,
+- blocks may remain blue or red structurally but still fail FinalityV2.
+
+This mechanism protects the network even when DAG structure alone does not reveal an attack.
+
+### 10.6 Short-Range vs Deep Anomalies
+
+| Depth | Layer Triggered | Expected Behavior |
+|-------|------------------|------------------|
+| d = 1–2 | GhostDAG only | Normal PoW competition; anomalies tolerated |
+| d ≥ 3 | Isolation Check | Isolated forks immediately rejected |
+| d ≥ nFinalityV2MinDepthScore | Score Veto | DAG anomalies, biased algo mix, or poor mergesets → veto |
+| d ≥ MHIS Window | MHIS Reject | Deep or compressed history blocks invalid |
+
+Each depth uses progressively stronger anomaly detectors.
+
+### 10.7 How Anomaly Detection Feeds FinalityV2
+
+Anomaly metrics shape the four scoring components:
+
+- **R_work** → work advantage
+- **R_blue** → mergeset & blue-score coherence
+- **R_dac** → connectivity and isolation detection
+- **R_algo** → realistic PoW distribution
+
+FinalityV2 combines these:
+
+Score = K_Work·R_work  
+       + K_Blue·R_blue  
+       + K_DAC·R_dac  
+       + K_Algo·R_algo
+
+Branches exhibiting any anomaly produce negative or insufficient score,
+resulting in `bad-reorg-low-score`.
+
+### 10.8 Summary
+
+Megabytes uses structural, statistical, and temporal indicators to detect DAG anomalies:
+
+- isolation → private or poorly-connected forks,  
+- abnormal width → excessive concurrency or flooding,  
+- mergeset divergence → structural inconsistency,  
+- timestamp compression → unrealistic timeline generation,  
+- algo-mix anomalies → non-honest mining behavior.
+
+These detectors strengthen GhostDAG and feed directly into FinalityV2,
+making Megabytes highly resistant to deep reorgs—  
+even those engineered with strong hashrate.
+
+DAG anomalies are the first line of defense against non-honest chain behavior.
+
+---
+
 ## DAG Glossary (Key Terms)
 
 ### Blue Block
