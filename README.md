@@ -7,8 +7,6 @@ Megabytes uses a **multi-parent BlockDAG** (8 DAG parents per block) combined wi
 GhostDAG-inspired scoring system to ensure strong convergence, high visibility of attacker behavior,  
 and robust analysis of mining patterns across multiple algorithms.
 
----
-
 ```mermaid
 flowchart LR
 %% === HEIGHT 19 ===
@@ -69,9 +67,6 @@ style H19 fill:transparent,stroke-width:0px,stroke:transparent;
 style H20 fill:transparent,stroke-width:0px,stroke:transparent;
 style H21 fill:transparent,stroke-width:0px,stroke:transparent;
 ```
----
-
-
 ## What This Repository Contains
 
 ### **1. [DAG_SPEC.md](./DAG_SPEC.md)** 
@@ -106,11 +101,23 @@ Including:
 
 ## BlockDAG Technical Overview (Key Facts)
 
+```mermaid
+flowchart LR
+    A([Block production]) --> B([DAG width])
+    B --> C([Parent selection])
+    C --> D([Mergeset and anticone])
+    D --> E([GhostDAG coloring])
+    E --> F([DAG anomaly detection])
+```
+
 ### **Multi-parent DAG**
 Each block includes:
 
 - **1 main parent** (highest blue score)
 - **8 DAG parents** (recent non-ancestors)
+- All DAG parents are **committed in the coinbase (OP_RETURN)**
+  
+DAG topology is fully enforced at the consensus level.
 
 This ensures high global connectivity and prevents DAG fragmentation.
 
@@ -142,14 +149,9 @@ Persistent width > 3 may indicate:
 - structural manipulation  
 
 Width reduction occurs naturally through GhostDAG parent selection.
-```mermaid
-flowchart LR
-    A([Block production]) --> B([DAG width])
-    B --> C([Parent selection])
-    C --> D([Mergeset and anticone])
-    D --> E([GhostDAG coloring])
-    E --> F([DAG anomaly detection])
-```
+
+---
+
 ## Where Finality Is Defined
 
 This repository covers **only the structural DAG logic**.
