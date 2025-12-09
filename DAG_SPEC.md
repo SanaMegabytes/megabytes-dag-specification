@@ -1,5 +1,28 @@
+
 ### Why Megabytes uses a BlockDAG
 
+```mermaid
+flowchart LR
+
+    A([Block production]) --> B([DAG width])
+    B --> C([Parent selection])
+    C --> D([Mergeset and anticone])
+    D --> E([GhostDAG coloring])
+    E --> F([DAG anomaly detection])
+
+    %% Styling
+    classDef stage fill:#e3e8ff,stroke:#3b3f99,stroke-width:1px,color:#000;
+    classDef detect fill:#ffe7d6,stroke:#cc5200,stroke-width:1px,color:#000;
+    classDef final fill:#e0ffe4,stroke:#1f7a1f,stroke-width:1px,color:#000;
+    classDef reject fill:#ffd6d6,stroke:#b30000,stroke-width:1.5px,color:#000;
+
+    class A,B,C,D,E stage;
+    class F detect;
+    class G,H,I,J final;
+    class R1,R2 reject;
+    class ACC final;
+```
+    
 A **BlockDAG** (Directed Acyclic Graph of Blocks) is a generalization of the traditional blockchain structure.  
 Instead of forcing every block to extend a single linear chain, a BlockDAG allows **multiple valid blocks to exist at the same height**, forming a graph of partially ordered blocks.
 
@@ -21,6 +44,7 @@ Megabytes adopts a BlockDAG for several structural and security advantages:
 - **Better multi-algorithm coherence**  
   DAG connectivity exposes unrealistic or manipulated PoW algorithm distributions more clearly than a linear chain.
 
+
 ### Objectives of the Megabytes DAG design
 
 The Megabytes BlockDAG is engineered around three core goals:
@@ -35,6 +59,30 @@ The Megabytes BlockDAG is engineered around three core goals:
   Honest miners contributing valid blocks nearly simultaneously are preserved inside the DAG, improving fairness and liveness.
 
 ---
+
+```mermaid
+flowchart LR
+
+    %% Continuité du premier diagramme
+    F([DAG anomaly detection]) --> H{Finality V2 scoring<br/>Score >= MinScore?}
+
+    H --> R1([Reorg Rejected<br/>bad-reorg-low-score])
+
+    H --> I([Finality V1 Checks<br/>Work + Blue Finality])
+
+    I --> R2([Reorg Rejected<br/>bad-reorg-finalized])
+    I --> ACC([Reorg Accepted<br/>Chain Extended])
+
+    %% Styling identique au premier diagramme
+    classDef stage fill:#e3e8ff,stroke:#3b3f99,stroke-width:1px,color:#000;
+    classDef detect fill:#ffe7d6,stroke:#cc5200,stroke-width:1px,color:#000;
+    classDef final fill:#e0ffe4,stroke:#1f7a1f,stroke-width:1px,color:#000;
+    classDef reject fill:#ffd6d6,stroke:#b30000,stroke-width:1.5px,color:#000;
+
+    class F detect;
+    class H,I,ACC final;
+    class R1,R2 reject;
+```
 
 ## DAG Glossary (Key Terms)
 
