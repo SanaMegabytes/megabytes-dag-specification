@@ -100,7 +100,6 @@ Including:
 ---
 
 ## BlockDAG Technical Overview (Key Facts)
-
 ```mermaid
 flowchart LR
     A([Block production]) --> B([DAG width])
@@ -109,7 +108,6 @@ flowchart LR
     D --> E([GhostDAG coloring])
     E --> F([DAG anomaly detection])
 ```
-
 ### **Multi-parent DAG**
 Each block includes:
 
