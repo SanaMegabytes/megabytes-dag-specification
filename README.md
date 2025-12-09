@@ -210,8 +210,6 @@ Contributions should follow:
 Pull requests modifying consensus rules must be accompanied by  
 clear rationale and simulations.
 
----
-
 
 
 
