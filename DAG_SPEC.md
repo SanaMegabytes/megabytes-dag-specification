@@ -1,5 +1,5 @@
 
-### Why Megabytes uses a BlockDAG
+# Megabytes BlockDAG
 
 ```mermaid
 flowchart LR
