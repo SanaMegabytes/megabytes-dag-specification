@@ -7,6 +7,9 @@ Megabytes uses a **multi-parent BlockDAG** (8 DAG parents per block) combined wi
 GhostDAG-inspired scoring system to ensure strong convergence, high visibility of attacker behavior,  
 and robust analysis of mining patterns across multiple algorithms.
 
+Unlike single-algorithm BlockDAGs where the blue score implicitly represents work, Megabytes separates cost (PoW) from topological quality and network convergence. 
+Tip selection is hierarchical: accumulated work dominates at large scales, while DAG quality and algorithmic balance are used as tie-breakers under comparable cost.
+
 ```mermaid
 flowchart LR
 %% === HEIGHT 19 ===
