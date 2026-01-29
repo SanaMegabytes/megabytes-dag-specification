@@ -155,3 +155,96 @@ Field | Description
 - Academic research on DAG security
 
 ---
+
+## getdagmeta (block-level)
+
+Returns detailed DAG metadata for a specific block, combining **persisted (DB)** and **runtime** views of the DAG state.
+
+### Arguments
+
+Name | Type | Required | Description
+------|------|----------|------------
+`blockhash` | string | yes | Target block hash to inspect
+
+### Description
+
+`getdagmeta` is a **low-level diagnostic command** designed to inspect how a specific block is positioned inside the DAG.
+
+It exposes both:
+- **Persisted metadata** stored in the DAG database (consensus-critical)
+- **Runtime-computed metadata** reconstructed from the current DAG view (debug / verification)
+
+This command is essential for:
+- DAG correctness verification
+- Finality debugging
+- Reorg analysis
+- GhostDAG parameter tuning
+- Detecting DB vs runtime divergence
+
+### What this command reveals
+
+**Structural DAG data**
+- Selected Parent (SP)
+- Merge-set size
+- Past depth
+- Anticone size
+- Local and tip width
+
+**GhostDAG consensus metrics**
+- Blue score
+- Blue steps
+- Blue / Red block counts
+- Effective K value (runtime)
+
+**Finality & integrity checks**
+- BLUE_READY status
+- Metadata completeness
+- DB ↔ runtime consistency validation
+
+### Returned fields (summary)
+
+Field | Description
+------|-------------
+`hash` | Block hash queried
+`height` | Block height
+`has_meta` | Indicates whether DAG metadata exists for this block
+`meta_db` | Persisted DAG metadata loaded from the DAG database
+`meta_runtime` | DAG metadata recomputed at runtime
+`sp_match` | Whether DB and runtime selected parent hashes match
+`blue_score_match` | Whether DB and runtime blue scores match
+`blue_steps_match` | Whether DB and runtime blue steps match
+
+### meta_db fields
+
+Field | Description
+------|-------------
+`sp_hash` | Selected parent hash
+`blue_score` | Monotonic GhostDAG blue score
+`blue_steps` | Distance (in blue steps) from selected parent
+`blue_count` | Number of blue blocks in merge-set
+`red_count` | Number of red blocks in merge-set
+`mergeset_size` | Total merge-set size
+`past_depth` | Depth of the past cone
+`future_children` | Number of known children (non-consensus metric)
+`width_tip` | DAG width at tip level
+`width_local` | Local DAG width around this block
+`tip_anticone` | Size of the anticone relative to the current tip
+`k_runtime` | Effective GhostDAG K value
+`flags` | Bitmask of DAG state flags
+`flags_decoded` | Human-readable decoded flags
+
+### Example
+
+```bash
+megabytes-cli getdagmeta <blockhash>
+```
+
+Typical use cases
+
+- Verifying GhostDAG convergence after a reorg
+- Ensuring blue-score monotonicity
+- Auditing DAG DB persistence correctness
+- Debugging Finality V2 veto decisions
+- Diagnosing unexpected DAG divergence
+
+
