@@ -7,9 +7,8 @@ flowchart LR
     B --> C([Parent selection])
     C --> D([Mergeset & anticone])
     D --> E([GhostDAG coloring])
-    E --> F([DAG anomaly detection])
+    E --> F([DAG structural signals])
 
-    %% Styling
     classDef stage fill:#e3e8ff,stroke:#3b3f99,stroke-width:1px,color:#000;
     classDef detect fill:#ffe7d6,stroke:#cc5200,stroke-width:1px,color:#000;
 
