@@ -201,7 +201,9 @@ Width tends to reduce naturally as nodes converge to the best head.
 
 This repo documents only structural logic.
 
-Finality (reorg acceptance / rejection) is documented in the security model repo:
+Finality (reorg acceptance / rejection) is documented in the security model repo: 
+
+https://github.com/SanaMegabytes/megabytes-security-model
 
 - MHIS (history-window safety)
 - Finality V1 (work + blue-finality)
