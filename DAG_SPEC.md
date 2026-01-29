@@ -3,24 +3,18 @@
 
 ```mermaid
 flowchart LR
-
     A([Block production]) --> B([DAG width])
     B --> C([Parent selection])
-    C --> D([Mergeset and anticone])
+    C --> D([Mergeset & anticone])
     D --> E([GhostDAG coloring])
     E --> F([DAG anomaly detection])
 
     %% Styling
     classDef stage fill:#e3e8ff,stroke:#3b3f99,stroke-width:1px,color:#000;
     classDef detect fill:#ffe7d6,stroke:#cc5200,stroke-width:1px,color:#000;
-    classDef final fill:#e0ffe4,stroke:#1f7a1f,stroke-width:1px,color:#000;
-    classDef reject fill:#ffd6d6,stroke:#b30000,stroke-width:1.5px,color:#000;
 
     class A,B,C,D,E stage;
     class F detect;
-    class G,H,I,J final;
-    class R1,R2 reject;
-    class ACC final;
 ```
     
 A **BlockDAG** (Directed Acyclic Graph of Blocks) is a generalization of the traditional blockchain structure.  
