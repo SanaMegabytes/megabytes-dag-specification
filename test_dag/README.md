@@ -134,7 +134,7 @@ Partial partition test (critical DAG scenario).
 
 ---
 
-### 11_restart_during_partition.sh  **(“Killer Test”)**
+### 11_restart_during_partition.sh  **(“Hardest Test”)**
 
 The most aggressive test in the suite.
 
