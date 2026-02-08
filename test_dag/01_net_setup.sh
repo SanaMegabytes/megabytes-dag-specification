@@ -12,7 +12,7 @@ cleanup() {
   done
   sudo ip link del "$BR" 2>/dev/null
 }
-# décommente si tu veux reset à chaque run :
+
 # cleanup
 
 # Bridge
@@ -27,24 +27,24 @@ for i in "${!NS[@]}"; do
 
   sudo ip netns add "$n"
 
-  # paire veth
+  #  veth
   sudo ip link add "$veth_host" type veth peer name "$veth_ns"
   sudo ip link set "$veth_ns" netns "$n"
 
-  # côté host vers bridge
+  #  bridge
   sudo ip link set "$veth_host" master "$BR"
   sudo ip link set "$veth_host" up
 
-  # côté namespace
+  #  namespace
   sudo ip netns exec "$n" ip link set lo up
   sudo ip netns exec "$n" ip link set "$veth_ns" up
   sudo ip netns exec "$n" ip addr add "$ipaddr/24" dev "$veth_ns"
 
-  # route (pas vraiment nécessaire sur /24, mais clean)
+  # route 
   sudo ip netns exec "$n" ip route add default via 10.10.0.1 2>/dev/null || true
 done
 
-# IP “gateway” sur le bridge (optionnel)
+# IP “gateway” 
 sudo ip addr add 10.10.0.1/24 dev "$BR" 2>/dev/null || true
 
 echo "OK: namespaces up"
