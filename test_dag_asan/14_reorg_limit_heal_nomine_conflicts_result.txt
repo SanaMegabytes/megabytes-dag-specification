@@ -1,0 +1,73 @@
+14 reorg-limit exact + heal(no-mine) under real partition [NETNS + ASAN daemons]
+================================================================================================
+Pre-state:
+mgb1 h=317   mp=0     tip=31fa1cc03ef7 cw=..013e00
+mgb2 h=317   mp=0     tip=31fa1cc03ef7 cw=..013e00
+mgb3 h=317   mp=100   tip=31fa1cc03ef7 cw=..013e00
+mgb4 h=317   mp=100   tip=31fa1cc03ef7 cw=..013e00
+================================================================================================
+>> Ensure wallets loaded
+>> [mgb1] ensure wallet loaded: t1
+>> [mgb2] ensure wallet loaded: t2
+>> [mgb3] ensure wallet loaded: t3
+>> [mgb4] ensure wallet loaded: t4
+================================================================================================
+>> Apply badnet: insane on mgb1/3/4 + PARTITION on mgb2
+[mgb1] applied: insane
+[mgb3] applied: insane
+[mgb4] applied: insane
+[mgb2] applied: PARTITION (loss 100%)
+==== mgb1 (veth1) ====
+qdisc tbf 1: root refcnt 17 rate 768Kbit burst 4Kb lat 1.2s
+qdisc netem 10: parent 1:1 limit 1000 delay 450ms  250ms loss 10% duplicate 2% reorder 20% 50% corrupt 0.2% gap 1
+==== mgb2 (veth2) ====
+qdisc netem 8009: root refcnt 17 limit 1000 loss 100%
+==== mgb3 (veth3) ====
+qdisc tbf 1: root refcnt 17 rate 768Kbit burst 4Kb lat 1.2s
+qdisc netem 10: parent 1:1 limit 1000 delay 450ms  250ms loss 10% duplicate 2% reorder 20% 50% corrupt 0.2% gap 1
+==== mgb4 (veth4) ====
+qdisc tbf 1: root refcnt 17 rate 768Kbit burst 4Kb lat 1.2s
+qdisc netem 10: parent 1:1 limit 1000 delay 450ms  250ms loss 10% duplicate 2% reorder 20% 50% corrupt 0.2% gap 1
+================================================================================================
+Phase A: ensure mgb1 has mature funds
+================================================================================================
+Phase B: mempool pressure/conflict-ish burst while mgb2 partitioned
+>> [mgb1] conflict pressure burst: 10 rapid sends (expect ok; goal is mempool pressure, not guaranteed rejects)
+   first txid=750fa6b7e3c2
+================================================================================================
+After Phase B:
+mgb1 h=317   mp=1     tip=31fa1cc03ef7 cw=..013e00
+mgb2 h=317   mp=0     tip=31fa1cc03ef7 cw=..013e00
+mgb3 h=317   mp=100   tip=31fa1cc03ef7 cw=..013e00
+mgb4 h=317   mp=101   tip=31fa1cc03ef7 cw=..013e00
+================================================================================================
+Phase C: Mine forks with reorg depth target <= 6
+>> network side mine on mgb1: NET_MINE=7
+>> isolated side mine on mgb2: ISO_MINE=6 (should NOT reach others due to partition)
+================================================================================================
+During isolation:
+mgb1 h=324   mp=8     tip=aaa8f66c1752 cw=..014500
+mgb2 h=323   mp=0     tip=ae58f9be37a6 cw=..014400
+mgb3 h=324   mp=108   tip=aaa8f66c1752 cw=..014500
+mgb4 h=324   mp=108   tip=aaa8f66c1752 cw=..014500
+================================================================================================
+Phase D: Heal mgb2 WITHOUT mining, only if CW differs
+>> chainwork pre-heal: mgb1..014500 mgb2..014400
+>> Heal mgb2 + force dial
+[mgb2] cleared
+After heal (waiting up to 120s):
+mgb1 h=324   mp=8     tip=aaa8f66c1752 cw=..014500
+mgb2 h=323   mp=0     tip=ae58f9be37a6 cw=..014400
+mgb3 h=324   mp=108   tip=aaa8f66c1752 cw=..014500
+mgb4 h=324   mp=108   tip=aaa8f66c1752 cw=..014500
+✅ Converged after 4s: aaa8f66c1752
+================================================================================================
+Post:
+mgb1 h=324   mp=8     tip=aaa8f66c1752 cw=..014500
+mgb2 h=324   mp=0     tip=aaa8f66c1752 cw=..014500
+mgb3 h=324   mp=108   tip=aaa8f66c1752 cw=..014500
+mgb4 h=324   mp=108   tip=aaa8f66c1752 cw=..014500
+================================================================================================
+>> Cleanup badnet (optional)
+PASS: reorg<=6 + heal(no-mine) achieved (no post-heal mining).
+================================================================================================
