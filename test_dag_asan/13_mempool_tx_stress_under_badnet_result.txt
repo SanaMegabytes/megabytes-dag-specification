@@ -1,0 +1,86 @@
+13 mempool tx stress under badnet (passable reorg<=6) [NETNS + ASAN daemons]
+================================================================================================
+Pre-state:
+mgb1 h=312   mp=23    tip=6f526c809b2a cw=..013900
+mgb2 h=312   mp=21    tip=6f526c809b2a cw=..013900
+mgb3 h=312   mp=123   tip=6f526c809b2a cw=..013900
+mgb4 h=312   mp=123   tip=6f526c809b2a cw=..013900
+================================================================================================
+>> Ensure wallets loaded
+>> [mgb1] ensure wallet loaded: t1
+>> [mgb2] ensure wallet loaded: t2
+>> [mgb3] ensure wallet loaded: t3
+>> [mgb4] ensure wallet loaded: t4
+================================================================================================
+>> Badnet status (expect insane on 1/3/4 and partition on 2)
+==== mgb1 (veth1) ====
+qdisc tbf 1: root refcnt 17 rate 768Kbit burst 4Kb lat 1.2s
+qdisc netem 10: parent 1:1 limit 1000 delay 450ms  250ms loss 10% duplicate 2% reorder 20% 50% corrupt 0.2% gap 1
+==== mgb2 (veth2) ====
+qdisc noqueue 0: root refcnt 2
+==== mgb3 (veth3) ====
+qdisc tbf 1: root refcnt 17 rate 768Kbit burst 4Kb lat 1.2s
+qdisc netem 10: parent 1:1 limit 1000 delay 450ms  250ms loss 10% duplicate 2% reorder 20% 50% corrupt 0.2% gap 1
+==== mgb4 (veth4) ====
+qdisc tbf 1: root refcnt 17 rate 768Kbit burst 4Kb lat 1.2s
+qdisc netem 10: parent 1:1 limit 1000 delay 450ms  250ms loss 10% duplicate 2% reorder 20% 50% corrupt 0.2% gap 1
+================================================================================================
+Phase A: Ensure mgb1 has mature funds + create many tx
+>> [mgb1] fan-out 20 UTXOs to self
+>> [mgb1] TX burst: 80 sends
+================================================================================================
+After tx generation (still partitioned):
+mgb1 h=312   mp=76    tip=6f526c809b2a cw=..013900
+mgb2 h=312   mp=71    tip=6f526c809b2a cw=..013900
+mgb3 h=312   mp=178   tip=6f526c809b2a cw=..013900
+mgb4 h=312   mp=176   tip=6f526c809b2a cw=..013900
+>> [mgb1] mempoolinfo:
+{
+  "size": 76,
+  "bytes": 11076,
+  "usage": 95952,
+  "maxmempool": 300000000,
+  "mempoolminfee": 0.001,
+  "minrelaytxfee": 0.001
+}
+================================================================================================
+Phase B: Mine a few blocks on network side (confirm some tx, but keep reorg small)
+Phase C: Isolated mgb2 mines small fork (reorg-safe) + restart mgb2
+>> Restart mgb2 (stress during partition)
+Megabytes Core starting
+✅ RPC back after 2s (mgb2)
+>> [mgb2] ensure wallet loaded: t2
+================================================================================================
+During isolation (after mining both sides + restart mgb2):
+mgb1 h=316   mp=3     tip=4914be96e181 cw=..013d00
+mgb2 h=316   mp=0     tip=0e6d8e8f06cb cw=..013d00
+mgb3 h=315   mp=103   tip=4914be96e181 cw=..013d00
+mgb4 h=316   mp=103   tip=4914be96e181 cw=..013d00
+================================================================================================
+Phase D: Heal mgb2, force dial, then wait convergence
+[mgb2] cleared
+================================================================================================
+After heal (waiting up to 90s):
+mgb1 h=316   mp=3     tip=4914be96e181 cw=..013d00
+mgb2 h=316   mp=0     tip=0e6d8e8f06cb cw=..013d00
+mgb3 h=316   mp=103   tip=4914be96e181 cw=..013d00
+mgb4 h=316   mp=103   tip=4914be96e181 cw=..013d00
+⚠️ Not converged after 90s
+⚠️ Not converged yet — mining 1 block(s) to trigger stabilization
+✅ Converged after 1s: 31fa1cc03ef7
+================================================================================================
+Post-convergence mempool spotcheck:
+mgb1 h=317   mp=0     tip=31fa1cc03ef7 cw=..013e00
+mgb2 h=317   mp=0     tip=31fa1cc03ef7 cw=..013e00
+>> [mgb2] mempoolinfo:
+{
+  "size": 0,
+  "bytes": 0,
+  "usage": 0,
+  "maxmempool": 300000000,
+  "mempoolminfee": 0.001,
+  "minrelaytxfee": 0.001
+}
+================================================================================================
+PASS criteria: no ASAN crash + convergence + mempool behaves (size not exploding / no RPC errors)
+================================================================================================
