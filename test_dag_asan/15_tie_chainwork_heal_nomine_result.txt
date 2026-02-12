@@ -1,0 +1,64 @@
+15 tie-chainwork + heal(no-mine) + then mine 1 to break tie [NETNS + ASAN daemons]
+================================================================================================
+Pre-state:
+mgb1 h=324   mp=8     tip=aaa8f66c1752 cw=..014500
+mgb2 h=324   mp=4     tip=aaa8f66c1752 cw=..014500
+mgb3 h=324   mp=108   tip=aaa8f66c1752 cw=..014500
+mgb4 h=324   mp=108   tip=aaa8f66c1752 cw=..014500
+================================================================================================
+>> Ensure wallets loaded
+>> [mgb1] ensure wallet loaded: t1
+>> [mgb2] ensure wallet loaded: t2
+>> [mgb3] ensure wallet loaded: t3
+>> [mgb4] ensure wallet loaded: t4
+================================================================================================
+>> Apply badnet: insane on mgb1/3/4 + PARTITION on mgb2
+[mgb1] applied: insane
+[mgb3] applied: insane
+[mgb4] applied: insane
+[mgb2] applied: PARTITION (loss 100%)
+==== mgb1 (veth1) ====
+qdisc tbf 1: root refcnt 17 rate 768Kbit burst 4Kb lat 1.2s
+qdisc netem 10: parent 1:1 limit 1000 delay 450ms  250ms loss 10% duplicate 2% reorder 20% 50% corrupt 0.2% gap 1
+==== mgb2 (veth2) ====
+qdisc netem 800a: root refcnt 17 limit 1000 loss 100%
+==== mgb3 (veth3) ====
+qdisc tbf 1: root refcnt 17 rate 768Kbit burst 4Kb lat 1.2s
+qdisc netem 10: parent 1:1 limit 1000 delay 450ms  250ms loss 10% duplicate 2% reorder 20% 50% corrupt 0.2% gap 1
+==== mgb4 (veth4) ====
+qdisc tbf 1: root refcnt 17 rate 768Kbit burst 4Kb lat 1.2s
+qdisc netem 10: parent 1:1 limit 1000 delay 450ms  250ms loss 10% duplicate 2% reorder 20% 50% corrupt 0.2% gap 1
+================================================================================================
+Phase A: Mine equal-work forks (TIE) while mgb2 partitioned
+>> network side mine on mgb1: NET_MINE=6
+>> isolated side mine on mgb2: ISO_MINE=6
+================================================================================================
+During isolation (expect different tips, but SAME cw suffix often):
+mgb1 h=330   mp=0     tip=4d1662d80119 cw=..014b00
+mgb2 h=330   mp=0     tip=5f579887a3f2 cw=..014b00
+mgb3 h=330   mp=100   tip=4d1662d80119 cw=..014b00
+mgb4 h=330   mp=100   tip=4d1662d80119 cw=..014b00
+================================================================================================
+>> chainwork suffix during isolation: mgb1..014b00 mgb2..014b00
+================================================================================================
+Phase B: Heal mgb2 WITHOUT mining; tie means converge is NOT guaranteed
+[mgb2] cleared
+After heal (waiting up to 60s):
+mgb1 h=330   mp=0     tip=4d1662d80119 cw=..014b00
+mgb2 h=330   mp=0     tip=5f579887a3f2 cw=..014b00
+mgb3 h=330   mp=100   tip=4d1662d80119 cw=..014b00
+mgb4 h=330   mp=100   tip=4d1662d80119 cw=..014b00
+⚠️ Not converged after 60s
+✅ Expected: not converged under tie (no deterministic winner without new info).
+================================================================================================
+Phase C: Break tie by mining 1 block(s) on network side (mgb1)
+✅ Converged after 1s: 177074fcd53c
+================================================================================================
+Post:
+mgb1 h=331   mp=0     tip=177074fcd53c cw=..014c00
+mgb2 h=331   mp=0     tip=177074fcd53c cw=..014c00
+mgb3 h=331   mp=100   tip=177074fcd53c cw=..014c00
+mgb4 h=331   mp=100   tip=177074fcd53c cw=..014c00
+================================================================================================
+PASS criteria: tie observed (often no converge) then 1 block breaks tie and convergence occurs.
+================================================================================================
